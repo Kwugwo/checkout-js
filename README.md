@@ -7,7 +7,7 @@ The merchant's backend creates an `ugwo` (payment session) and returns its `uid`
 ## Install
 
 ```bash
-npm install @kwugwo/checkout-js
+npm install @kwugwo/checkout
 ```
 
 Or via script tag:
