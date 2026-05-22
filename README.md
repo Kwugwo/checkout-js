@@ -13,7 +13,7 @@ npm install @kwugwo/checkout
 Or via script tag:
 
 ```html
-<script src="https://cdn.kwugwo.com/checkout-js/v1/kwugwo-checkout.global.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@kwugwo/checkout"></script>
 ```
 
 ## Usage
@@ -47,7 +47,7 @@ document.getElementById('pay').addEventListener('click', async () => {
 ### Script tag
 
 ```html
-<script src="https://cdn.kwugwo.com/checkout-js/v1/kwugwo-checkout.global.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@kwugwo/checkout"></script>
 <script>
     var checkout = KwugwoCheckout.init({ publicKey: 'pk.live.YOUR_PUBLIC_KEY' });
 
