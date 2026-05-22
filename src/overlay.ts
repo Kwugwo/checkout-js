@@ -5,6 +5,7 @@ export interface OverlayHandle {
     iframe: HTMLIFrameElement;
     onClose: () => void;
     markReady: () => void;
+    setCountdown: (seconds: number | null) => void;
     destroy: () => void;
 }
 
@@ -32,6 +33,11 @@ export function createOverlay(iframeSrc: string, onCloseRequest: () => void): Ov
     closeBtn.setAttribute('aria-label', 'Close checkout');
     closeBtn.textContent = '×';
     closeBtn.addEventListener('click', () => onCloseRequest());
+
+    const countdown = document.createElement('div');
+    countdown.setAttribute('data-kwugwo-countdown', '');
+    countdown.setAttribute('role', 'status');
+    countdown.setAttribute('aria-live', 'polite');
 
     // Loader matches the hosted-checkout sidebar skeleton — teal panel with
     // pulsing white bars where the merchant name, amount, and details would land.
@@ -80,6 +86,7 @@ export function createOverlay(iframeSrc: string, onCloseRequest: () => void): Ov
     frameInner.appendChild(iframe);
     frameInner.appendChild(loader);
 
+    frameWrap.appendChild(countdown);
     frameWrap.appendChild(closeBtn);
     frameWrap.appendChild(frameInner);
     root.appendChild(backdrop);
@@ -104,6 +111,16 @@ export function createOverlay(iframeSrc: string, onCloseRequest: () => void): Ov
         iframe,
         onClose: onCloseRequest,
         markReady: () => root.setAttribute('data-ready', 'true'),
+        setCountdown: (seconds: number | null) => {
+            if (seconds === null) {
+                countdown.removeAttribute('data-visible');
+                countdown.textContent = '';
+                return;
+            }
+            const label = seconds === 1 ? 'second' : 'seconds';
+            countdown.textContent = `Closing in ${seconds} ${label}…`;
+            countdown.setAttribute('data-visible', 'true');
+        },
         destroy: () => {
             document.removeEventListener('keydown', onKeyDown);
             root.setAttribute('data-open', 'false');

@@ -97,6 +97,25 @@ export function injectStyles(): void {
 }
 [data-kwugwo-root] [data-kwugwo-close]:hover { background: rgba(255, 255, 255, 0.25); }
 
+[data-kwugwo-root] [data-kwugwo-countdown] {
+  position: absolute;
+  top: -44px;
+  left: 0;
+  height: 36px;
+  padding: 0 16px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.15);
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: 0.01em;
+  pointer-events: none;
+  display: none;
+  align-items: center;
+}
+[data-kwugwo-root] [data-kwugwo-countdown][data-visible="true"] { display: inline-flex; }
+
 /* Loader = teal sidebar skeleton (mirrors the hosted-checkout sidebar) */
 [data-kwugwo-root] [data-kwugwo-loader] {
   position: absolute;
@@ -138,6 +157,11 @@ export function injectStyles(): void {
   [data-kwugwo-root] [data-kwugwo-close] {
     top: 12px;
     right: 12px;
+    background: rgba(0, 0, 0, 0.4);
+  }
+  [data-kwugwo-root] [data-kwugwo-countdown] {
+    top: 12px;
+    left: 12px;
     background: rgba(0, 0, 0, 0.4);
   }
 }

@@ -11,7 +11,9 @@ import { createOverlay, type OverlayHandle } from './overlay';
 
 const DEFAULT_BASE_URL = 'https://checkout.kwugwo.africa';
 
-const UGWO_UID_RE = /^ugw\.[a-zA-Z0-9]{4}\.[a-zA-Z0-9]{24}$/;
+const UGWO_UID_RE = /^ugw\.[a-zA-Z0-9]{4}\.[a-zA-Z0-9_]{24}$/;
+
+const SUCCESS_CLOSE_DELAY_SECONDS = 5;
 
 export class KwugwoCheckoutInstance {
     private readonly publicKey: string;
@@ -62,6 +64,21 @@ export class KwugwoCheckoutInstance {
 
         return new Promise<CheckoutResult>((resolve) => {
             let settled = false;
+            let countdownTimer: ReturnType<typeof setTimeout> | null = null;
+            let finalizeCountdown: (() => void) | null = null;
+
+            const closeAndResolve = (result: CheckoutResult) => {
+                if (countdownTimer !== null) {
+                    clearTimeout(countdownTimer);
+                    countdownTimer = null;
+                }
+                finalizeCountdown = null;
+                this.teardown();
+                if (result.type === 'success' && options.returnUrl) {
+                    window.location.href = options.returnUrl;
+                }
+                resolve(result);
+            };
 
             const finish = async (result: CheckoutResult) => {
                 if (settled) return;
@@ -82,16 +99,34 @@ export class KwugwoCheckoutInstance {
                     }
                 }
 
-                this.teardown();
-
-                if (result.type === 'success' && options.returnUrl) {
-                    window.location.href = options.returnUrl;
+                if (result.type === 'success') {
+                    let remaining = SUCCESS_CLOSE_DELAY_SECONDS;
+                    this.overlay?.setCountdown(remaining);
+                    finalizeCountdown = () => closeAndResolve(result);
+                    const tick = () => {
+                        remaining -= 1;
+                        if (remaining <= 0) {
+                            closeAndResolve(result);
+                        } else {
+                            this.overlay?.setCountdown(remaining);
+                            countdownTimer = setTimeout(tick, 1000);
+                        }
+                    };
+                    countdownTimer = setTimeout(tick, 1000);
+                    return;
                 }
 
-                resolve(result);
+                closeAndResolve(result);
             };
 
             const requestClose = () => {
+                // After success, the countdown is running and `settled` is true —
+                // honor an explicit close (ESC/backdrop/×) by closing immediately
+                // with the original success result rather than swallowing the click.
+                if (finalizeCountdown) {
+                    finalizeCountdown();
+                    return;
+                }
                 finish({ type: 'closed', ugwoUid: options.ugwoUid } as ClosedResult);
             };
 
