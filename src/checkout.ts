@@ -13,7 +13,13 @@ const DEFAULT_BASE_URL = 'https://checkout.kwugwo.africa';
 
 const UGWO_UID_RE = /^ugw\.[a-zA-Z0-9]{4}\.[a-zA-Z0-9_]{24}$/;
 
-const SUCCESS_CLOSE_DELAY_SECONDS = 5;
+const CLOSE_DELAY_SECONDS = 5;
+
+// Error codes the hosted checkout emits when the session is already beyond
+// paying (paid/refunded, or cancelled). The page renders a "already
+// processed" / "cancelled" screen for these, so close on the same countdown
+// as success instead of yanking the modal away before it can be read.
+const DELAYED_CLOSE_ERROR_CODES = new Set(['ugwo_processed', 'ugwo_cancelled']);
 
 export class KwugwoCheckoutInstance {
     private readonly publicKey: string;
@@ -99,8 +105,12 @@ export class KwugwoCheckoutInstance {
                     }
                 }
 
-                if (result.type === 'success') {
-                    let remaining = SUCCESS_CLOSE_DELAY_SECONDS;
+                const countdownBeforeClose =
+                    result.type === 'success' ||
+                    (result.type === 'error' && DELAYED_CLOSE_ERROR_CODES.has(result.code));
+
+                if (countdownBeforeClose) {
+                    let remaining = CLOSE_DELAY_SECONDS;
                     this.overlay?.setCountdown(remaining);
                     finalizeCountdown = () => closeAndResolve(result);
                     const tick = () => {
@@ -120,9 +130,9 @@ export class KwugwoCheckoutInstance {
             };
 
             const requestClose = () => {
-                // After success, the countdown is running and `settled` is true —
-                // honor an explicit close (ESC/backdrop/×) by closing immediately
-                // with the original success result rather than swallowing the click.
+                // While a countdown is running `settled` is already true — honor an
+                // explicit close (ESC/backdrop/×) by closing immediately with the
+                // original result rather than swallowing the click.
                 if (finalizeCountdown) {
                     finalizeCountdown();
                     return;
