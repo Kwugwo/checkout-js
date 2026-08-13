@@ -6,6 +6,7 @@ export const MESSAGE_SOURCE = 'kwugwo';
 
 export type IncomingMessageType =
     | 'ready'
+    | 'resize'
     | 'success'
     | 'error'
     | 'close';

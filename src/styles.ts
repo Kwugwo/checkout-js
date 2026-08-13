@@ -12,6 +12,13 @@ export function injectStyles(): void {
     style.id = STYLE_ID;
     style.textContent = `
 [data-kwugwo-root] {
+  /* --kwugwo-content-height is set inline from the hosted page's resize
+     message. The frame never shrinks below the default modal height and never
+     grows past the viewport (less room for the close button above it), so a
+     page taller than the screen still scrolls internally. The 96px reserve is
+     split above and below by the centering, leaving room for the close button
+     that sits 44px above the frame. */
+  --kwugwo-frame-height: min(max(720px, var(--kwugwo-content-height, 720px)), calc(100vh - 96px));
   position: fixed;
   inset: 0;
   z-index: 2147483647;
@@ -58,18 +65,20 @@ export function injectStyles(): void {
 /* Once the iframe signals ready, the wrap expands to full modal size */
 [data-kwugwo-root][data-ready="true"] [data-kwugwo-frame-wrap] {
   width: min(980px, 100vw);
-  height: min(720px, 100vh);
+  height: var(--kwugwo-frame-height);
 }
 
 /* Iframe is always rendered at the FINAL target dimensions so the hosted page
    boots at desktop viewport (no reflow when the wrap expands). The wrap clips
-   it during loading; iframe is invisible until ready. */
+   it during loading; iframe is invisible until ready. It tracks the same
+   height as the wrap so the hosted page's viewport matches the frame — that's
+   what keeps long content from scrolling inside it. */
 [data-kwugwo-root] iframe {
   position: absolute;
   top: 0;
   left: 0;
   width: min(980px, 100vw);
-  height: min(720px, 100vh);
+  height: var(--kwugwo-frame-height);
   border: 0;
   background: #ffffff;
   visibility: hidden;
@@ -153,6 +162,14 @@ export function injectStyles(): void {
     max-width: none;
     height: 100%;
     max-height: none;
+  }
+  /* The iframe is capped at min(980px, 100vw) x min(720px, 100vh) for the
+     desktop modal, but the full-screen mobile modal is taller than 720px on
+     most phones. Without this the iframe stays 720px tall and the teal
+     frame-inner background shows as a band below it. */
+  [data-kwugwo-root] iframe {
+    width: 100%;
+    height: 100%;
   }
   [data-kwugwo-root] [data-kwugwo-close] {
     top: 12px;

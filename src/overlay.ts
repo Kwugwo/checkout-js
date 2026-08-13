@@ -5,6 +5,7 @@ export interface OverlayHandle {
     iframe: HTMLIFrameElement;
     onClose: () => void;
     markReady: () => void;
+    setContentHeight: (height: number | null) => void;
     setCountdown: (seconds: number | null) => void;
     destroy: () => void;
 }
@@ -111,6 +112,17 @@ export function createOverlay(iframeSrc: string, onCloseRequest: () => void): Ov
         iframe,
         onClose: onCloseRequest,
         markReady: () => root.setAttribute('data-ready', 'true'),
+        // The hosted page reports how tall its content actually is; the
+        // stylesheet turns that into the frame height (floored at the default
+        // modal height, capped at the viewport). Passing null restores the
+        // default — used when nothing has been reported yet.
+        setContentHeight: (height: number | null) => {
+            if (height === null || !Number.isFinite(height) || height <= 0) {
+                root.style.removeProperty('--kwugwo-content-height');
+                return;
+            }
+            root.style.setProperty('--kwugwo-content-height', `${Math.ceil(height)}px`);
+        },
         setCountdown: (seconds: number | null) => {
             if (seconds === null) {
                 countdown.removeAttribute('data-visible');

@@ -153,6 +153,14 @@ export class KwugwoCheckoutInstance {
                     case 'ready':
                         this.overlay?.markReady();
                         break;
+                    case 'resize':
+                        // Hosted page grew/shrank (e.g. bank transfer details
+                        // rendered) — resize the frame to fit instead of
+                        // letting the content scroll inside a fixed box.
+                        if (typeof payload.height === 'number') {
+                            this.overlay?.setContentHeight(payload.height);
+                        }
+                        break;
                     case 'success':
                         finish({
                             type: 'success',
