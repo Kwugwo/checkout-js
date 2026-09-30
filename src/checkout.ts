@@ -161,6 +161,15 @@ export class KwugwoCheckoutInstance {
                             this.overlay?.setContentHeight(payload.height);
                         }
                         break;
+                    case 'theme':
+                        // Hosted page's colour scheme and accent, so the
+                        // frame's offset slab follows a processor's colours
+                        // and dark mode.
+                        this.overlay?.setTheme(
+                            payload.theme === 'light' || payload.theme === 'dark' ? payload.theme : null,
+                            typeof payload.slab === 'string' ? payload.slab : null
+                        );
+                        break;
                     case 'success':
                         finish({
                             type: 'success',

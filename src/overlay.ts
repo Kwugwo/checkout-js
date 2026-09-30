@@ -7,8 +7,30 @@ export interface OverlayHandle {
     markReady: () => void;
     setContentHeight: (height: number | null) => void;
     setCountdown: (seconds: number | null) => void;
+    setTheme: (theme: 'light' | 'dark' | null, slab: string | null) => void;
     destroy: () => void;
 }
+
+// Linearicons Free "cross", the icon set the hosted checkout uses.
+const CROSS_PATH =
+    'M548.203 537.6l289.099-289.098c9.998-9.998 9.998-26.206 0-36.205-9.997-9.997-26.206-9.997-36.203 0l-289.099 289.099-289.098-289.099c-9.998-9.997-26.206-9.997-36.205 0-9.997 9.998-9.997 26.206 0 36.205l289.099 289.098-289.099 289.099c-9.997 9.997-9.997 26.206 0 36.203 5 4.998 11.55 7.498 18.102 7.498s13.102-2.499 18.102-7.499l289.098-289.098 289.099 289.099c4.998 4.998 11.549 7.498 18.101 7.498s13.102-2.499 18.101-7.499c9.998-9.997 9.998-26.206 0-36.203l-289.098-289.098z';
+
+const SVG_NS = 'http://www.w3.org/2000/svg';
+
+function crossIcon(): SVGSVGElement {
+    const svg = document.createElementNS(SVG_NS, 'svg');
+    svg.setAttribute('viewBox', '0 0 1024 1024');
+    svg.setAttribute('width', '16');
+    svg.setAttribute('height', '16');
+    svg.setAttribute('fill', 'currentColor');
+    svg.setAttribute('aria-hidden', 'true');
+    const path = document.createElementNS(SVG_NS, 'path');
+    path.setAttribute('d', CROSS_PATH);
+    svg.appendChild(path);
+    return svg;
+}
+
+const HEX_COLOUR_RE = /^#[0-9a-fA-F]{6}$/;
 
 export function createOverlay(iframeSrc: string, onCloseRequest: () => void): OverlayHandle {
     injectStyles();
@@ -32,7 +54,7 @@ export function createOverlay(iframeSrc: string, onCloseRequest: () => void): Ov
     closeBtn.type = 'button';
     closeBtn.setAttribute('data-kwugwo-close', '');
     closeBtn.setAttribute('aria-label', 'Close checkout');
-    closeBtn.textContent = '×';
+    closeBtn.appendChild(crossIcon());
     closeBtn.addEventListener('click', () => onCloseRequest());
 
     const countdown = document.createElement('div');
@@ -40,25 +62,27 @@ export function createOverlay(iframeSrc: string, onCloseRequest: () => void): Ov
     countdown.setAttribute('role', 'status');
     countdown.setAttribute('aria-live', 'polite');
 
-    // Loader matches the hosted-checkout sidebar skeleton — teal panel with
-    // pulsing white bars where the merchant name, amount, and details would land.
+    // Loader matches the hosted checkout's summary skeleton: the mint band
+    // with bars where the merchant, amount and customer land, and the
+    // reference pushed to the bottom.
     const loader = document.createElement('div');
     loader.setAttribute('data-kwugwo-loader', '');
 
-    const bars: Array<{ height: number; width: number; marginBottom?: number }> = [
-        { height: 14, width: 140, marginBottom: 10 },
-        { height: 52, width: 220, marginBottom: 40 },
-        { height: 14, width: 80, marginBottom: 6 },
-        { height: 18, width: 180, marginBottom: 32 },
-        { height: 14, width: 100, marginBottom: 6 },
-        { height: 18, width: 200 }
+    const bars: Array<{ height: number; width: string; marginBottom?: number; push?: boolean }> = [
+        { height: 14, width: '62%', marginBottom: 14 },
+        { height: 38, width: '80%', marginBottom: 28 },
+        { height: 11, width: '64px', marginBottom: 10 },
+        { height: 13, width: '96px', marginBottom: 10 },
+        { height: 13, width: '170px' },
+        { height: 11, width: '72%', push: true }
     ];
 
-    bars.forEach(({ height, width, marginBottom }) => {
+    bars.forEach(({ height, width, marginBottom, push }) => {
         const bar = document.createElement('div');
         bar.setAttribute('data-kwugwo-loader-bar', '');
+        if (push) bar.setAttribute('data-push', '');
         bar.style.height = `${height}px`;
-        bar.style.width = `${width}px`;
+        bar.style.width = width;
         if (marginBottom) bar.style.marginBottom = `${marginBottom}px`;
         loader.appendChild(bar);
     });
@@ -132,6 +156,16 @@ export function createOverlay(iframeSrc: string, onCloseRequest: () => void): Ov
             const label = seconds === 1 ? 'second' : 'seconds';
             countdown.textContent = `Closing in ${seconds} ${label}…`;
             countdown.setAttribute('data-visible', 'true');
+        },
+        // The hosted page reports its theme and the accent-line colour it
+        // is using (Kwugwo teal, or the processor's), so the frame's slab and
+        // loader match what's inside. null falls back to the OS preference
+        // and Kwugwo teal.
+        setTheme: (theme: 'light' | 'dark' | null, slab: string | null) => {
+            if (theme === 'light' || theme === 'dark') root.setAttribute('data-theme', theme);
+            else root.removeAttribute('data-theme');
+            if (slab && HEX_COLOUR_RE.test(slab)) root.style.setProperty('--kwugwo-slab-reported', slab);
+            else root.style.removeProperty('--kwugwo-slab-reported');
         },
         destroy: () => {
             document.removeEventListener('keydown', onKeyDown);
